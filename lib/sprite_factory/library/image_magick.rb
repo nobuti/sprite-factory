@@ -1,3 +1,5 @@
+require 'digest/md5'
+
 module SpriteFactory
   module Library
     module ImageMagick
@@ -28,7 +30,8 @@ module SpriteFactory
             :filename => filename,
             :path     => path,
             :width    => width,
-            :height   => height
+            :height   => height,
+            :digest   => Digest::MD5.file(filename).hexdigest
           }
         end
       end

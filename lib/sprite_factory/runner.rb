@@ -52,10 +52,6 @@ module SpriteFactory
       max    = layout_images(images)
       uniqueness_hash(images)
 
-      images.each do |i|
-        i[:digest] = Digest::MD5.file(i[:filename]).hexdigest
-      end
-
       header = summary(images, max)
       report(header)
 

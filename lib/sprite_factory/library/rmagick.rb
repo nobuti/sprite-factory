@@ -1,4 +1,5 @@
 require 'RMagick'
+require 'digest/md5'
 
 module SpriteFactory
   module Library
@@ -13,7 +14,8 @@ module SpriteFactory
             :filename => filename,
             :image    => image,
             :width    => image.columns,
-            :height   => image.rows
+            :height   => image.rows,
+            :digest   => Digest::MD5.file(filename).hexdigest
           }
         end
       end

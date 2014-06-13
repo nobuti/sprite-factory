@@ -1,4 +1,5 @@
 require 'chunky_png'
+require 'digest/md5'
 
 module SpriteFactory
   module Library
@@ -13,7 +14,8 @@ module SpriteFactory
             :filename => filename,
             :image    => image,
             :width    => image.width,
-            :height   => image.height
+            :height   => image.height,
+            :digest   => Digest::MD5.file(filename).hexdigest
           }
         end
       end
