@@ -24,7 +24,7 @@ task :reference do
   regenerate = lambda do |input, options = {}, &block|
     output = options[:output] || input
     SpriteFactory.run!(input, {:report => true}.merge(options), &block)
-    FileUtils.mv(output + "." + (                   :png).to_s, 'test/images/reference')
+    FileUtils.mv(Dir.glob(output + "-s*.png"), 'test/images/reference')
     FileUtils.mv(output + "." + (options[:style] || :css).to_s, 'test/images/reference')
   end
 
@@ -36,6 +36,9 @@ task :reference do
   regenerate.call('test/images/regular', :output => 'test/images/regular.margin',     :selector => 'img.margin_',     :margin => 10)
   regenerate.call('test/images/regular', :output => 'test/images/regular.fixed',      :selector => 'img.fixed_',      :width => 100, :height => 100)
   regenerate.call('test/images/regular', :output => 'test/images/regular.sassy',      :selector => 'img.sassy_',      :style => :sass)
+
+  regenerate.call('test/images/subfolders')
+  regenerate.call('test/images/regular', :output => 'test/images/regular.nocomments', :selector => 'img.nocomments_', :nocomments => true)
 
   regenerate.call('test/images/irregular')
   regenerate.call('test/images/irregular', :output => 'test/images/irregular.horizontal', :selector => 'img.horizontal_', :layout => :horizontal)

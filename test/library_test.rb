@@ -33,8 +33,20 @@ class SpriteFactory::LibraryTest < SpriteFactory::TestCase
         end
         width  = images.map{|i| i[:width]}.inject(0){|n,w| n = n + w }
         height = images.map{|i| i[:height]}.max
-        library.create(output_path('regular.horizontal.png'), images, width, height)
-        assert_reference_image('regular.horizontal.png')
+
+        # Digest generation
+        sum = Digest::MD5.new
+        sum << LIBRARY_TEST_PATH
+        sum << :horizontal.to_s
+        images.each do |image|
+          [:filename, :height, :width, :x, :y, :digest].each do |attr|
+            sum << image[attr].to_s
+          end
+        end
+        digest = sum.hexdigest[0...10]
+
+        library.create(output_path("regular.horizontal-s#{digest}.png"), images, width, height)
+        assert_reference_image("regular.horizontal-s#{digest}.png")
       end
     end
 

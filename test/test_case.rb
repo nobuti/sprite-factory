@@ -17,6 +17,8 @@ module SpriteFactory
     SUBFOLDERS_PATH = 'test/images/subfolders'
     HOVER_PATH      = 'test/images/hover'
 
+    LIBRARY_TEST_PATH = 'test/images/regular.horizontal'
+
     REGULAR   = SpriteFactory.find_files(File.join(REGULAR_PATH,   '*.png'))
     IRREGULAR = SpriteFactory.find_files(File.join(IRREGULAR_PATH, '*.png'))
 
@@ -48,9 +50,11 @@ module SpriteFactory
 
     def integration_test(input, options = {}, &block)
       output = options[:output] || input
+      options[:return] = :digest unless options[:return]
+
       with_clean_output do 
-        SpriteFactory.run!(input, options, &block)
-        assert_reference_image(File.basename(output) + "." + (                   :png).to_s)
+        digest = SpriteFactory.run!(input, options, &block)
+        assert_reference_image(File.basename(output) + "-s#{digest}." + (:png).to_s)
         assert_reference_style(File.basename(output) + "." + (options[:style] || :css).to_s)
       end
     end

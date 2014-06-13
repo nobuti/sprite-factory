@@ -150,13 +150,17 @@ module SpriteFactory
         assert_equal(false, File.exists?(output_path(output + ".png")), "preconditions")
         assert_equal(false, File.exists?(output_path(output + ".css")), "preconditions")
 
+        # Grab digest and delete the css result file to continue the test
+        digest = SpriteFactory.run!(REGULAR_PATH, {:return => :digest})
+        File.delete(output_path(output + ".css"))
+
         css = SpriteFactory.run!(REGULAR_PATH, {:nocss => true})
 
-        assert_equal(true,  File.exists?(output_path(output + ".png")), "output sprite IMAGE should exist")
+        assert_equal(true,  File.exists?(output_path(output + "-s#{digest}.png")), "output sprite IMAGE should exist")
         assert_equal(false, File.exists?(output_path(output + ".css")), "output sprite CSS should NOT exist")
         assert_equal(IO.read(reference_path(output+".css")), css, "expected return value from #run! to provide generated CSS content")
 
-        assert_reference_image(output + ".png")
+        assert_reference_image(output + "-s#{digest}.png")
 
       end
     end

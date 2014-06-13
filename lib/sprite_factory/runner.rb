@@ -1,5 +1,6 @@
 require 'pathname'
 require 'fileutils'
+require 'digest/md5'
 
 module SpriteFactory
   class Runner
@@ -12,7 +13,7 @@ module SpriteFactory
 
     attr :input
     attr :config
-  
+
     def initialize(input, config = {})
       @input  = input.to_s[-1] == "/" ? input[0...-1] : input # gracefully ignore trailing slash on input directory name
       @config = config
@@ -49,8 +50,13 @@ module SpriteFactory
 
       images = load_images
       max    = layout_images(images)
-      header = summary(images, max)
+      uniqueness_hash(images)
 
+      images.each do |i|
+        i[:digest] = Digest::MD5.file(i[:filename]).hexdigest
+      end
+
+      header = summary(images, max)
       report(header)
 
       css = []
@@ -69,6 +75,8 @@ module SpriteFactory
 
       if config[:return] == :images
         images # if caller explicitly asked for detailed images hash instead of generated CSS
+      elsif config[:return] == :digest
+        digest
       else
         css    # otherwise, default is to return the generated CSS to caller in string form
       end
@@ -127,6 +135,10 @@ module SpriteFactory
       config[:output_image] || "#{output}.png"
     end
 
+    def cache_busted
+      config[:output_image] || "#{output}-s#{digest}.png"
+    end
+
     def output_style_file
       config[:output_style] || "#{output}.#{style_name}"
     end
@@ -166,6 +178,24 @@ module SpriteFactory
       SpriteFactory.find_files(*expansions)
     end
 
+    # Returns the uniqueness hash for this sprite object
+    def uniqueness_hash(images = [])
+      @uniqueness_hash ||= begin
+        sum = Digest::MD5.new
+        sum << output
+        sum << layout_name.to_s
+        images.each do |image|
+          [:filename, :height, :width, :x, :y, :digest].each do |attr|
+            sum << image[attr].to_s
+          end
+        end
+        sum.hexdigest[0...10]
+      end
+    end
+
+    def digest
+      uniqueness_hash
+    end
     #----------------------------------------------------------------------------
 
     def library
@@ -206,9 +236,19 @@ module SpriteFactory
 
     #----------------------------------------------------------------------------
 
+    def cleanup_old_sprites
+      Dir[File.join("#{output}-s*.png")].each do |file|
+        puts "removing #{file}"
+        FileUtils.rm file
+      end
+    end
+
     def create_sprite(images, width, height)
-      library.create(output_image_file, images, width, height)
-      pngcrush(output_image_file)
+      if generation_required?
+        cleanup_old_sprites
+        image = library.create(cache_busted, images, width, height)
+        pngcrush(cache_busted)
+      end
     end
 
     #----------------------------------------------------------------------------
@@ -219,6 +259,11 @@ module SpriteFactory
 
     def layout_images(images)
       layout_strategy.layout(images, :width => width, :height => height, :hpadding => hpadding, :vpadding => vpadding, :hmargin => hmargin, :vmargin => vmargin)
+    end
+
+    # Does this sprite need to be generated
+    def generation_required?
+      !File.exists?(cache_busted)
     end
 
     #----------------------------------------------------------------------------
@@ -257,11 +302,14 @@ module SpriteFactory
         \n#{images.map{|i| "        #{report_path(i[:filename])} (#{i[:width]}x#{i[:height]})" }.join("\n")}
 
         Output files:
-          #{report_path(output_image_file)}
+          #{report_path(cache_busted)}
           #{report_path(output_style_file)}
 
         Output size:
           #{max[:width]}x#{max[:height]}
+
+        Output digest:
+          #{digest}
 
       EOF
     end
